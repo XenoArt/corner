@@ -85,7 +85,7 @@ async function renderHistoryTable(filter = 'all', searchQuery = '', startDate = 
 
     try {
         // Fetch EndOrEdit API data
-        const apiResponse = await fetch('http://mimdinare.runasp.net/api/EndOrEdit');
+        const apiResponse = await fetch('https://ubanze.bsite.net/api/EndOrEdit');
         if (apiResponse.ok) {
             const apiData = await apiResponse.json();
 
@@ -106,7 +106,7 @@ async function renderHistoryTable(filter = 'all', searchQuery = '', startDate = 
         }
 
         // Fetch Game Sessions from /api/Purchase
-        const gameResponse = await fetch('http://mimdinare.runasp.net/api/Purchase');
+        const gameResponse = await fetch('https://ubanze.bsite.net/api/Purchase');
         if (gameResponse.ok) {
             const gameData = await gameResponse.json();
 
