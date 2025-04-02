@@ -256,7 +256,7 @@ async function startRental() {
             updateBalanceDisplay();
 
             // Send to API
-            const response = await fetch('http://mimdinare.runasp.net/api/Cashreg', {
+            const response = await fetch('https://ubanze.bsite.net/api/Cashreg', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -390,7 +390,7 @@ function validateSplitPayment() {
 }
 async function updatePaymentBalances(cashAmount, cardAmount) {
     try {
-        const response = await fetch('http://mimdinare.runasp.net/api/Cashreg', {
+        const response = await fetch('https://ubanze.bsite.net/api/Cashreg', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -626,7 +626,7 @@ async function confirmPayment() {
 
     try {
         // Process payments through API
-        const response = await fetch('http://mimdinare.runasp.net/api/Cashreg', {
+        const response = await fetch('https://ubanze.bsite.net/api/Cashreg', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1022,7 +1022,7 @@ async function startFixedRental() {
             updateBalanceDisplay();
 
             // Send payment to cash register API
-            await fetch('http://mimdinare.runasp.net/api/Cashreg', {
+            await fetch('https://ubanze.bsite.net/api/Cashreg', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1329,7 +1329,7 @@ function updateShopPaymentSplit() {
 async function updateBalanceDisplay() {
     try {
         // 1. Fetch current balance from API
-        const response = await fetch('http://mimdinare.runasp.net/api/Cashreg');
+        const response = await fetch('https://ubanze.bsite.net/api/Cashreg');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -1384,7 +1384,7 @@ async function populateShopItems() {
     shopItemsContainer.innerHTML = 'Loading products...';
 
     try {
-        const response = await fetch('http://mimdinare.runasp.net/api/products/all');
+        const response = await fetch('https://ubanze.bsite.net/api/products/all');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -1514,7 +1514,7 @@ async function confirmEndDay() {
         const cashTaken = totalCashBalance - cashToLeave;
         
         // 1. Make API request to reset balances
-        const response = await fetch('http://mimdinare.runasp.net/api/reset-add', {
+        const response = await fetch('https://ubanze.bsite.net/api/reset-add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1605,7 +1605,7 @@ async function confirmEndDay() {
         };
 
         // 1. Make API request to end day endpoint
-        const response = await fetch('http://mimdinare.runasp.net/api/EndOrEdit', {
+        const response = await fetch('https://ubanze.bsite.net/api/EndOrEdit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1618,7 +1618,7 @@ async function confirmEndDay() {
         }
 
         // 2. Make API request to reset balances
-        const resetResponse = await fetch('http://mimdinare.runasp.net/api/cashreg/reset-add', {
+        const resetResponse = await fetch('https://ubanze.bsite.net/api/cashreg/reset-add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1667,7 +1667,7 @@ async function completeShopPurchase(cashAmount, cardAmount) {
 
     try {
         // Make API call to update cash register
-        const response = await fetch('http://mimdinare.runasp.net/api/Cashreg', {
+        const response = await fetch('https://ubanze.bsite.net/api/Cashreg', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1705,7 +1705,7 @@ async function processCardPayment(amount, description) {
     if (amount <= 0) return { success: true };
 
     try {
-        const response = await fetch('http://mimdinare.runasp.net/api/Payment/card', {
+        const response = await fetch('https://ubanze.bsite.net/api/Payment/card', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1752,7 +1752,7 @@ async function saveBalance() {
 
     try {
         // Get current balances
-        const currentBalances = await fetch('http://mimdinare.runasp.net/api/Cashreg').then(res => res.json());
+        const currentBalances = await fetch('https://ubanze.bsite.net/api/Cashreg').then(res => res.json());
         
         // Calculate differences
         const beforeValue = balanceType === 'cash' ? totalCashBalance : totalCardBalance;
@@ -1783,7 +1783,7 @@ async function saveBalance() {
         console.log("Sending edit request:", requestData);
 
         // 1. Send to history API
-        const historyResponse = await fetch('http://mimdinare.runasp.net/api/EndOrEdit', {
+        const historyResponse = await fetch('https://ubanze.bsite.net/api/EndOrEdit', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1798,8 +1798,8 @@ async function saveBalance() {
 
         // 2. Update the actual balance
         const endpoint = balanceType === 'cash' 
-            ? 'http://mimdinare.runasp.net/api/cashreg/update-cash' 
-            : 'http://mimdinare.runasp.net/api/cashreg/update-card';
+            ? 'https://ubanze.bsite.net/api/cashreg/update-cash' 
+            : 'https://ubanze.bsite.net/api/cashreg/update-card';
 
         const updateResponse = await fetch(endpoint, {
             method: 'POST',
@@ -1894,7 +1894,7 @@ async function sendPurchaseData(purchaseData) {
 
         console.log("Sending to API:", JSON.stringify(requestData, null, 2));
 
-        const response = await fetch('http://mimdinare.runasp.net/api/Purchase', {
+        const response = await fetch('https://ubanze.bsite.net/api/Purchase', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
