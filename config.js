@@ -135,7 +135,7 @@ async function addStockItem() {
         };
 
         // Make API request
-        const response = await fetch('http://mimdinare.runasp.net/api/products/create', {
+        const response = await fetch('https://ubanze.bsite.net/api/products/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ async function addStockItem() {
 async function loadStockData() {
     try {
         // 1. Fetch data from API
-        const response = await fetch('http://mimdinare.runasp.net/api/products/all');
+        const response = await fetch('https://ubanze.bsite.net/api/products/all');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -243,7 +243,7 @@ async function removeStockItem(index) {
         console.log(productName)
         // Make API request
         const response = await fetch(
-            `http://mimdinare.runasp.net/api/products/remove/${encodeURIComponent(productName)}`, 
+            `https://ubanze.bsite.net/api/products/remove/${encodeURIComponent(productName)}`, 
             {
                 method: 'DELETE',
                 headers: {
