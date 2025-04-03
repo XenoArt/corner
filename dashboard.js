@@ -35,21 +35,26 @@ const rentalOptions = {
     'ps5': [
         { label: '+2 ჯოისტიკი & 50% ფასდაკლება', price: 6 },
         { label: '+2 ჯოისტიკი', price: 12 },
+        { label: 'ჩვეულებრივი', price: 8 },
         { label: 'უფასო', price: 0 },
         { label: '50% ფასდაკლება', price: 4 },
+        { label: 'Promocode', price: 5 },
 
     ],
     'vip': [
         { label: '+2 ჯოისტიკი & 50% ფასდაკლება', price: 8 },
         { label: '+2 ჯოისტიკი', price: 16 },
+        { label: 'ჩვეულებრივი', price: 12 },
         { label: 'უფასო', price: 0 },
         { label: '50% ფასდაკლება', price: 6 },
+        { label: 'Promocode', price: 8 },
    
     ],
     'sache': [
         { label: '50% ფასდაკლება', price: 6 },
+        { label: 'ჩვეულებრივი', price: 12 },
         { label: 'უფასო', price: 0 },
-
+        { label: 'Promocode', price: 8 },
     ]
 };
 
