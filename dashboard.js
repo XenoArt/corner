@@ -39,6 +39,7 @@ const rentalOptions = {
         { label: 'უფასო', price: 0 },
         { label: '50% ფასდაკლება', price: 4 },
         { label: 'Promocode', price: 5 },
+        { label: '+2 ჯოისტიკი & Promocode', price: 8 },
 
     ],
     'vip': [
@@ -48,6 +49,7 @@ const rentalOptions = {
         { label: 'უფასო', price: 0 },
         { label: '50% ფასდაკლება', price: 6 },
         { label: 'Promocode', price: 8 },
+        { label: '+2 ჯოისტიკი & Promocode', price: 10 },
    
     ],
     'sache': [
