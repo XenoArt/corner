@@ -203,6 +203,9 @@
                 width: 90%;
             }
         }
+        .invis{
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -214,6 +217,7 @@
             <a href="./history.html">HISTORY</a>
             <a href="./shop.html">SHOP</a>
             <a href="./config.html">CONFIG</a>
+            <a href="./controll.html" class="invis" id="ctrl">Controll</a>
         </div>
         <div class="user-info">
             <span id="username-display"></span>
@@ -295,7 +299,13 @@ function init() {
     loadStockData();
     setupEventListeners();
 }
-
+const username = localStorage.getItem('username');
+document.getElementById('username-display').textContent = username;
+if(username === "Gega") {
+    object = document.getElementById("ctrl")
+    object.classList.remove('invis');
+       
+} 
 // Load stock data from API or localStorage
 async function loadStockData() {
     try {

@@ -219,3 +219,6 @@
                 font-size: 1.2rem;
             }
         }
+        .invis{
+            display: none;
+        }

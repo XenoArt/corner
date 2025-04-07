@@ -5,7 +5,7 @@ let currentPaymentSession = null
 let totalCashBalance = parseFloat(localStorage.getItem('cashBalance')) || 0;
 let totalCardBalance = parseFloat(localStorage.getItem('cardBalance')) || 0;
 let activeSessions = JSON.parse(localStorage.getItem('activeSessions')) || {};
-
+let currentCARD= null
 let stockData = [
     { item: "Cappy", price: 3.10, quantity: 0 },
     { item: "Fuse tea", price: 2.60, quantity: 0 },
@@ -25,7 +25,43 @@ let stockData = [
     { item: "ხრუსტიმი დიდი", price: 3.00, quantity: 0 },
     { item: "ხრუსტიმი პატარა", price: 2.00, quantity: 0 }
 ];
+document.addEventListener("DOMContentLoaded", function () {
+    // Create a function to fetch and update the card status
+    function fetchAndUpdateCards() {
+        fetch('https://ubanze.bsite.net/api/Actives') // Replace with the correct API endpoint
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch cards data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Loop through the data and apply the class based on isActive status
+                data.forEach(item => {
+                    const gridItems = document.querySelectorAll('.grid-item p');
+                    gridItems.forEach(gridItem => {
+                        if (gridItem.textContent.trim() == item.number) {
+                            // Add or remove the active class based on item.isActive
+                            if (item.isActive) {
+                                gridItem.classList.add('active-card-label');
+                            } else {
+                                gridItem.classList.remove('active-card-label');
+                            }
+                        }
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }
 
+    // Initial fetch when the page loads
+    fetchAndUpdateCards();
+
+    // Set interval to repeat the fetch every second (1000ms)
+    setInterval(fetchAndUpdateCards, 100);
+});
 let currentShopCardId = null;
 let shopCart = [];
 let currentPaymentCardId = null;
@@ -71,6 +107,20 @@ window.addEventListener('load', function() {
     restoreActiveSessions();
 
     const username = localStorage.getItem('username');
+    
+    // Create navbar based on username
+    const navbar = document.createElement('nav');
+    navbar.className = 'navbar';
+    
+    if(username === "Gega") {
+        object = document.getElementById("ctrl")
+        object.classList.remove('invis');
+           
+    } 
+    
+    // Insert the navbar at the beginning of the body
+    document.body.insertBefore(navbar, document.body.firstChild);
+
     document.getElementById('username-display').textContent = username;
     updateBalanceDisplay();
     
@@ -140,42 +190,52 @@ function restoreActiveSessions() {
         if (!card) return;
 
         const currentTime = Date.now();
-        const elapsedSeconds = Math.floor((currentTime - session.startTime) / 1000);
-
-        if (session.isFixedRental) {
-            // For fixed rentals, we need to track both elapsed and remaining time
-            const totalFixedDuration = session.totalDuration;
-            const remainingSeconds = Math.max(0, totalFixedDuration - elapsedSeconds);
+        
+        if (session.isPaused) {
+            // For paused sessions, we need to calculate the total paused time
+            const timeSincePause = currentTime - session.pauseStartTime;
+            session.totalPausedTime += timeSincePause;
             
-            if (elapsedSeconds >= totalFixedDuration) {
-                // Session expired - show payment popup if payLater
-                if (session.payLater) {
-                    showPaymentPopup(cardId, session.price);
-                } else {
-                    delete activeSessions[cardId];
-                    resetCard(card);
-                }
-                return;
-            }
-
-            // Update session with current elapsed time
-            session.elapsedSeconds = elapsedSeconds;
-            session.timeLeft = remainingSeconds;
-            
+            // Render as paused but don't start timer
             renderActiveSession(card, session);
-            startTimer(remainingSeconds, card, session.rentalType, session.pricePerHour, true, session.payLater);
+            card.classList.add('paused-session');
         } else {
-            // For Mimdinare rentals (counting up)
-            // Update session with current elapsed time
-            session.elapsedSeconds = elapsedSeconds;
+            // For active sessions, calculate elapsed time (excluding any previous paused time)
+            const elapsedSeconds = Math.floor((currentTime - session.startTime - session.totalPausedTime) / 1000);
+
+            if (session.isFixedRental) {
+                // Fixed rental (counting down)
+                const remainingSeconds = Math.max(0, session.totalDuration - elapsedSeconds);
+                session.timeLeft = remainingSeconds;
+                
+                if (remainingSeconds <= 0) {
+                    if (session.payLater) {
+                        showPaymentPopup(cardId, session.price);
+                    } else {
+                        delete activeSessions[cardId];
+                        resetCard(card);
+                    }
+                    return;
+                }
+            } else {
+                // Mimdinare rental (counting up)
+                session.elapsedSeconds = elapsedSeconds;
+            }
             
             renderActiveSession(card, session);
-            // Start timer with elapsed time (counting up)
-            startTimer(elapsedSeconds, card, session.rentalType, session.pricePerHour, false, session.payLater);
+            startTimer(
+                session.isFixedRental ? session.timeLeft : session.elapsedSeconds,
+                card, 
+                session.rentalType, 
+                session.pricePerHour, 
+                session.isFixedRental, 
+                session.payLater
+            );
         }
     });
     saveState();
 }
+
 function resetCard(card) {
     card.innerHTML = '<div class="add-button" onclick="showPopup(this)">+</div><div class="plus-button" onclick="openShopWindow(this)">+</div>';
     card.classList.remove('timer-active');
@@ -198,15 +258,74 @@ function renderActiveSession(card, session) {
         <div>Type: ${session.rentalType}</div>
         <div>${displayPrice}</div>
         ${session.purchases?.length ? `<div>Items: ₾${session.purchases.reduce((sum, p) => sum + p.total, 0).toFixed(2)}</div>` : ''}
+        <button class="pause-button" onclick="${session.isPaused ? 'resumeSession(this)' : 'pauseSession(this)'}">
+            ${session.isPaused ? 'Resume' : 'Pause'}
+        </button>
         <button class="end-button" onclick="endSession(this)">End</button>
         <div class="plus-button visible" onclick="openShopWindow(this)">+</div>
     `;
     card.classList.add('timer-active');
+    if (session.isPaused) {
+        card.classList.add('paused-session');
+    } else {
+        card.classList.remove('paused-session');
+    }
+}
+function resumeSession(button) {
+    const card = button.closest('.card');
+    const cardId = card.dataset.cardId;
+    const session = activeSessions[cardId];
+    
+    if (!session || !session.isPaused) return;
+    
+    // Calculate how long we were paused
+    const now = Date.now();
+    session.totalPausedTime += now - session.pauseStartTime;
+    session.isPaused = false;
+    session.pauseStartTime = null;
+    
+    // Start the timer with adjusted times
+    if (session.isFixedRental) {
+        // For fixed rentals, adjust remaining time
+        const activeTime = now - session.startTime - session.totalPausedTime;
+        session.timeLeft = Math.max(0, session.totalDuration - Math.floor(activeTime / 1000));
+        startTimer(session.timeLeft, card, session.rentalType, session.pricePerHour, true, session.payLater);
+    } else {
+        // For Mimdinare, use the original elapsed seconds (without paused time)
+        const activeTime = now - session.startTime - session.totalPausedTime;
+        session.elapsedSeconds = Math.floor(activeTime / 1000);
+        startTimer(session.elapsedSeconds, card, session.rentalType, session.pricePerHour, false, session.payLater);
+    }
+    
+    // Update UI
+    renderActiveSession(card, session);
+    saveState();
 }
 function saveHistoryEntry(entry) {
     const historyData = JSON.parse(localStorage.getItem('historyData')) || [];
     historyData.push(entry);
     localStorage.setItem('historyData', JSON.stringify(historyData));
+}
+function pauseSession(button) {
+    const card = button.closest('.card');
+    const cardId = card.dataset.cardId;
+    const session = activeSessions[cardId];
+    
+    if (!session || session.isPaused) return;
+    
+    // Clear the current timer
+    if (timerIntervals[cardId]) {
+        clearInterval(timerIntervals[cardId]);
+        delete timerIntervals[cardId];
+    }
+    
+    // Mark as paused and record pause time
+    session.isPaused = true;
+    session.pauseStartTime = Date.now();
+    
+    // Update UI
+    renderActiveSession(card, session);
+    saveState();
 }
 
 async function startRental() {
@@ -534,41 +653,41 @@ async function processShopPurchase() {
 }
 function startTimer(initialSeconds, card, rentalType, pricePerHour, isFixedRental = false, payLater = false) {
     const cardId = card.dataset.cardId;
+    const session = activeSessions[cardId];
     
+    if (!session || session.isPaused) return; // Don't start timer if session is paused
+
     // Clear any existing timer
     if (timerIntervals[cardId]) {
         clearInterval(timerIntervals[cardId]);
+        delete timerIntervals[cardId];
     }
 
-    const session = activeSessions[cardId];
-    if (!session) return;
-
-    let remainingSeconds = isFixedRental ? initialSeconds : 0;
-    let elapsedSeconds = isFixedRental ? 0 : initialSeconds;
-
     function updateTimer() {
+        const now = Date.now();
+        // Calculate ACTIVE time (total time minus paused time)
+        const activeTime = now - session.startTime - session.totalPausedTime;
+       
         if (isFixedRental) {
             // For fixed rentals (counting down)
-            remainingSeconds = Math.max(0, session.totalDuration - Math.floor((Date.now() - session.startTime) / 1000));
+            const remainingSeconds = Math.max(0, session.totalDuration - Math.floor(activeTime / 1000));
             session.timeLeft = remainingSeconds;
+            UpdateTrueCard(cardId, remainingSeconds, rentalType);
             
-            // Only trigger alarm when time actually runs out
             if (remainingSeconds <= 0 && !session.isCompleted) {
                 session.isCompleted = true;
                 triggerAlarm(card);
-                
-                // Show payment popup if payLater
+                UpdateFalseCard(cardId);
                 if (session.payLater) {
                     showPaymentPopup(cardId, session.price);
                 }
             }
         } else {
             // For Mimdinare (counting up)
-            elapsedSeconds = Math.floor((Date.now() - session.startTime) / 1000);
+            const elapsedSeconds = Math.floor(activeTime / 1000);
             session.elapsedSeconds = elapsedSeconds;
         }
         
-        // Update the display
         renderActiveSession(card, session);
         saveState();
     }
@@ -577,6 +696,7 @@ function startTimer(initialSeconds, card, rentalType, pricePerHour, isFixedRenta
     timerIntervals[cardId] = setInterval(updateTimer, 1000);
     updateTimer(); // Initial update
 }
+
 
 function showPaymentPopup(cardId, amount, isShopPurchase = false) {
     currentPaymentCardId = cardId;
@@ -705,6 +825,8 @@ async function confirmPayment() {
     }
 }
 async function endSession(button) {
+    selectedCard = button.parentElement;
+    currentCARD = selectedCard.getAttribute('data-card-id');
     const card = button.closest('.card');
     if (!card) return;
     
@@ -712,6 +834,12 @@ async function endSession(button) {
     const session = activeSessions[cardId];
     
     if (!session) return;
+    if (session.isPaused) {
+        const now = Date.now();
+        session.totalPausedTime += now - session.pauseStartTime;
+        session.isPaused = false;
+    }
+
 
     // Stop the timer immediately
     if (timerIntervals[cardId]) {
@@ -721,13 +849,13 @@ async function endSession(button) {
 
     // Calculate amount due (rental + shop purchases)
     let amountDue = 0;
-    
-    // 1. Rental cost if pay-later
     if (session.payLater && !session.paymentProcessed) {
         if (session.isFixedRental) {
             amountDue += session.price;
         } else {
-            const elapsedHours = session.elapsedSeconds / 3600;
+            // Calculate elapsed ACTIVE time in hours
+            const activeTime = Date.now() - session.startTime - session.totalPausedTime;
+            const elapsedHours = activeTime / (1000 * 60 * 60);
             amountDue += elapsedHours * session.pricePerHour;
         }
     }
@@ -756,6 +884,7 @@ async function endSession(button) {
         resetCard(card);
         saveState();
     }
+    UpdateFalseCard(currentCARD);
 }
 function triggerAlarm(card) {
     if (!card) return;
@@ -871,10 +1000,133 @@ function logout() {
     localStorage.removeItem('username');
     window.location.href = 'index.html';
 }
-
+async function UpdateTrueCard(currentCARD,totalSeconds,type){
+    const url = `https://ubanze.bsite.net/api/Actives/${currentCARD}`;
+  
+   
+    const requestBody = {
+      id: currentCARD,          // Must match the URL parameter
+      number: currentCARD,
+      isActive: true,
+      secInTimer: totalSeconds,
+      mimdinare: false,
+      type:type
+    };
+  
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Update failed');
+      }
+  
+      // Successful update returns 204 No Content
+      console.log('Update successful');
+      
+      // Verify the update by fetching the updated item
+      const updatedItem = await fetchActiveItem(id);
+      console.log('Updated item:', updatedItem);
+      return updatedItem;
+      
+    } catch (error) {
+      console.error('Error updating item:', error);
+      throw error;
+    }
+}
+async function UpdateTrue2Card(currentCARD,totalSeconds,type){
+    const url = `https://ubanze.bsite.net/api/Actives/${currentCARD}`;
+  
+    if (true) {
+        console.log("ok")
+    }else{
+        console.log("nope")
+    }
+    const requestBody = {
+      id: currentCARD,          // Must match the URL parameter
+      number: currentCARD,
+      isActive: true,
+      secInTimer: totalSeconds,
+      mimdinare: true,
+      type:type
+    };
+  
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Update failed');
+      }
+  
+      // Successful update returns 204 No Content
+      console.log('Update successful');
+      
+      // Verify the update by fetching the updated item
+      const updatedItem = await fetchActiveItem(id);
+      console.log('Updated item:', updatedItem);
+      return updatedItem;
+      
+    } catch (error) {
+      console.error('Error updating item:', error);
+      throw error;
+    }
+}
+async function UpdateFalseCard(currentCARD){
+    const url = `https://ubanze.bsite.net/api/Actives/${currentCARD}`;
+  
+    // The request body must include the ID and all required fields
+    const requestBody = {
+      id: currentCARD,          // Must match the URL parameter
+      number: currentCARD,
+      isActive: false,
+      second: 0,
+      mimdinare:false,
+      type:"Idle"
+    };
+  
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Update failed');
+      }
+  
+      // Successful update returns 204 No Content
+      console.log('Update successful');
+      
+      // Verify the update by fetching the updated item
+      const updatedItem = await fetchActiveItem(id);
+      console.log('Updated item:', updatedItem);
+      return updatedItem;
+      
+    } catch (error) {
+      console.error('Error updating item:', error);
+      throw error;
+    }
+}
 function showPopup(button) {
     selectedCard = button.parentElement;
-
+    currentCARD = selectedCard.getAttribute('data-card-id');
     // Create a new popup structure for initial choice
     const popup = document.getElementById('popup');
     popup.innerHTML = `
@@ -1070,7 +1322,10 @@ async function startFixedRental() {
         cardAmount: cardAmount,
         purchases: [],
         isCompleted: false,
-        purchaseData: purchaseData
+        purchaseData: purchaseData,
+        isPaused: false,
+        pauseStartTime: null, // When the session was paused
+        totalPausedTime: 0,
     };
 
     // Send to purchase API
@@ -1080,13 +1335,13 @@ async function startFixedRental() {
         console.error('Failed to send purchase data:', error);
         // Continue even if API fails
     }
-
+   
     // Start the session
     renderActiveSession(selectedCard, activeSessions[cardId]);
     startTimer(totalSeconds, selectedCard, rentalType, pricePerHour, true, payLater);
     closePopup();
     saveState();
-
+    UpdateTrueCard(currentCARD,totalSeconds,rentalType);
     alert(`Fixed rental started successfully!`);
 }
 
@@ -1170,10 +1425,12 @@ function showMimdinareOptions() {
 }
 
 async function startMimdinareRental() {
+    
     if (!selectedCard) return;
 
     // Get form values
     const rentalType = document.querySelector('#rentalType').value;
+    console.log(rentalType)
     const pricePerHour = parseFloat(document.querySelector('#rentalType option:checked').dataset.price);
     const payLater = document.getElementById('payLaterCheckbox').checked;
     const cardId = selectedCard.dataset.cardId;
@@ -1199,9 +1456,13 @@ async function startMimdinareRental() {
         cashAmount: 0,
         cardAmount: 0,
         purchases: [],
-        purchaseData: purchaseData
+        purchaseData: purchaseData,
+        isPaused: false,
+        pauseStartTime: null, // When the session was paused
+        totalPausedTime: 0,
     };
-
+    bool = false
+    UpdateTrue2Card(currentCARD,0,rentalType);
     // Send to API
     try {
         await sendPurchaseData(purchaseData);
@@ -1209,12 +1470,13 @@ async function startMimdinareRental() {
         console.error('Failed to send initial purchase data:', error);
     }
 
+    
     // Start the session
     renderActiveSession(selectedCard, activeSessions[cardId]);
     startTimer(0, selectedCard, rentalType, pricePerHour, false, payLater);
     closePopup();
     saveState();
-
+  
     alert(`Mimdinare rental started. Time is now counting up.`);
 }
 

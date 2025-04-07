@@ -186,3 +186,6 @@ tr:hover {
     width: 100%;
     max-width: 200px;
 }
+.invis{
+    display: none;
+}

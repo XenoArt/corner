@@ -1,7 +1,12 @@
 // Display username from localStorage
 const username = localStorage.getItem('username');
-document.getElementById('username-display').textContent = username || '';
-
+document.getElementById('username-display').textContent = username || '';;
+if(username === "Gega") {
+    object = document.getElementById("ctrl")
+    object.classList.remove('invis');
+       
+}     
+   
 // Load rental types and stock items from localStorage
 let rentalOptions = JSON.parse(localStorage.getItem('rentalOptions')) || {
     'ps5-premium': [

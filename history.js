@@ -4,7 +4,11 @@ let renderedDataIds = new Set();  // Track rendered entry IDs (timestamps)
 // Display username
 const username = localStorage.getItem('username');
 document.getElementById('username-display').textContent = username;
-
+if(username === "Gega") {
+    object = document.getElementById("ctrl")
+    object.classList.remove('invis');
+       
+} 
 // Initialize Flatpickr calendars with Georgian time
 const startDateInput = flatpickr("#startDateInput", {
     dateFormat: "Y-m-d",
