@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchAndUpdateCards();
 
     // Set interval to repeat the fetch every second (1000ms)
-    setInterval(fetchAndUpdateCards, 100);
+    setInterval(fetchAndUpdateCards, 2000);
 });
 let currentShopCardId = null;
 let shopCart = [];
